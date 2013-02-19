@@ -32,6 +32,6 @@ send(Msg) ->
     send_raw(<<Msg/binary, "\r\n">>).
 
 send_raw(Msg) ->
-    irc_router:send(Msg).
+    bot_conn:send(Msg).
 
 

@@ -29,6 +29,7 @@ connect(Host, Port) ->
     irc_router:connected(),
     ok.
 
+%%% DO NOT CALL this, use irc_send instead
 send(Line) ->
     gen_server:cast(bot_svc, {raw_send, Line}),
     ok.

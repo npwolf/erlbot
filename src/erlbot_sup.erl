@@ -30,7 +30,7 @@ init([]) ->
     {ok, { {one_for_one, 5, 10}, [
        ?CHILD(irc_router, worker, "erlbot"),
        ?CHILD_SUP(plugin_sup),
-       ?CHILD(bot_conn, worker, ["localhost", 6667])
+       ?CHILD(bot_conn, worker, ["irc.ops.sfdc.net", 6667])
             ]} }.
 
 
