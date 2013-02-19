@@ -1,5 +1,5 @@
 Introduction
-============l
+=============
 
 Like other erlbots, this erlbot is an irc bot I wrote to help me learn Erlang. The plugin system makes it easy to add functionality. 
 
