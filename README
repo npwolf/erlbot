@@ -1,0 +1,40 @@
+Introduction
+============l
+
+Like other erlbots, this erlbot is an irc bot I wrote to help me learn Erlang. The plugin system makes it easy to add functionality. 
+
+It is currently hard coded to connect to localhost:6667 and join #erlang and #bots.
+
+Author: dev@wolfplusplus.com
+
+Running
+=============
+
+./rebar compile
+cd ebin
+erl
+application:start(erlbot).
+
+Stopping
+=============
+application:stop(erlbot).
+
+Supervision Tree
+=============
+
+erlbot_app+->erlbot_sup+->+--+irc_router
+                          |
+                          +--+plugin_sup+->+-+ping_plugin
+                          |                |
+                          +--+bot_conn     +-+nick_plugin
+                                           |
+                                           +-+channel_plugin
+                                           |
+                                           +-+evangelize_plugin
+
+Design Notes
+=============
+
+bot_conn - Manages the socket connection.
+irc_router - Event manager which parses incoming irc messages and notifies subscribers with easy to filter events
+plugin_sup - Plugin supervisor.  Define plugins to load in here.  You can add plugins and load them without restarting the bot.

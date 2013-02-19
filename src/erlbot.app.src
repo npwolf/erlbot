@@ -1,0 +1,12 @@
+{application, erlbot,
+ [
+  {description, "Erlang IRC Bot"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { erlbot_app, []}},
+  {env, []}
+ ]}.
