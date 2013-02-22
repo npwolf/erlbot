@@ -3,6 +3,8 @@
 %% This is a commented out example of overriding just server and port
 %{erlbot, [
 %    % cmd_word - the string the bot sees as its cmd initiator. IE erlbot help
+%    {cmd_word, "yobot"},
+%    % server - IRC server to connect to 
 %    {server, "irc.your.server.com"},
 %    % port - IRC server port to connect to 
 %    {port, 6668}

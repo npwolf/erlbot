@@ -3,7 +3,7 @@ Introduction
 
 Like other erlbots, this erlbot is an irc bot I wrote to help me learn Erlang. The plugin system makes it easy to add functionality. 
 
-Out of the box it is configured to connect to localhost:6667 and join #erlang and #bots. Modify ./user_conf/user.conf.erl to customize.
+Out of the box it is configured to connect to localhost:6667 and join #erlang and #bots. Copy ./user_conf/user.conf.erl.sample to ./user_conf/user.conf.erl and customize.
 
 Author: dev@wolfplusplus.com
 
