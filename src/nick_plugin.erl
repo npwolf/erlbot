@@ -1,20 +1,22 @@
 %%% nick_plugin handle setting nick when we connect
 %%% handles if nick in use by appending a number to pref nick
 -module(nick_plugin).
--export([start_link/1]).
+-export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(state, {pref_nick, current_nick, nick_number=0}).
 -include("bot.hrl").
 
 %% gen_server specfic
-start_link(Nick) -> 
-    gen_server:start_link(?MODULE, [Nick], []).
+start_link() -> 
+    gen_server:start_link(?MODULE, [], []).
 
-init([Nick]) ->
+init([]) ->
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     io:format("[~s] started.~n", [?MODULE]),
     irc_router:add_sub(self()),
+    % Load our nick from settings
+    Nick = settings:get(?MODULE, nick),
     BinNick = list_to_binary(Nick),
     {ok, #state{pref_nick=BinNick}}.
 

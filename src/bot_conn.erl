@@ -18,16 +18,27 @@ init([Server, Port]) ->
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     connect(Server, Port),
+    io:format("[~s] Started~n", [?MODULE]),
     {ok, #state{server=Server, port=Port}}.
 
 % Connect to an IRC server with a given Host and Port.  Set up the TCP option to
 % give us messages on a line-by-line basis.
 connect(Host, Port) ->
     TcpOptions = [binary, {active, true}, {packet, line}, {keepalive, true}], 
-    {ok, Sock} = gen_tcp:connect(Host, Port, TcpOptions), 
-    gen_server:cast(bot_svc, {new_sock, Sock}),
-    irc_router:connected(),
+   io:format("[~s] Connecting to ~s:~p~n", [?MODULE, Host, Port]),
+    case gen_tcp:connect(Host, Port, TcpOptions) of
+        {ok, Sock} -> 
+            gen_server:cast(bot_svc, {new_sock, Sock}),
+            irc_router:connected();
+        {error, Reason} ->
+           io:format("[~s] Error connecting to ~s:~p Reason: ~p~n", [?MODULE, Host, Port, Reason]),
+           reconnect()
+    end,
     ok.
+
+reconnect() ->
+    io:format("Waiting ~p seconds before reconncting~n", [?RECONNECT_AFTER]),
+    erlang:send_after(?RECONNECT_AFTER, bot_svc, {connect}).
 
 %%% DO NOT CALL this, use irc_send instead
 send(Line) ->
@@ -48,12 +59,13 @@ handle_info({tcp, Sock, Data}, S = #state{sock=Sock}) ->
     %%io:format("[~w] Sock Received: ~s", [Sock, Data]),
     irc_router:recv_raw(Data),
     {noreply, S};
-handle_info({tcp_closed, Sock}, S = #state{sock=Sock, server=Server, port=Port}) ->
-    io:format("[~w] Sock closed, reconnecting~n", [Sock]),
+handle_info({tcp_closed, Sock}, S = #state{sock=Sock}) ->
+    io:format("[~w] Disconnected.~n", [Sock]),
     irc_router:disconnected(),
-    io:format("Waiting ~p seconds before reconncting~n", [?RECONNECT_AFTER]),
-    io:format("Connect to port ~p~n", [Port]), 
-    timer:sleep(?RECONNECT_AFTER),
+    flush(),
+    reconnect(),
+    {noreply, S};
+handle_info({connect}, S = #state{server=Server, port=Port}) ->
     flush(),
     connect(Server, Port),
     {noreply, S};

@@ -26,11 +26,14 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
+    CmdWord = settings:get("erlbot", cmd_word),
+    IrcServer = settings:get("erlbot", server),
+    IrcPort = settings:get("erlbot", port),
     % This start order is important
     {ok, { {one_for_one, 5, 10}, [
-       ?CHILD(irc_router, worker, "erlbot"),
+       ?CHILD(irc_router, worker, CmdWord),
        ?CHILD_SUP(plugin_sup),
-       ?CHILD(bot_conn, worker, ["irc.ops.sfdc.net", 6667])
+       ?CHILD(bot_conn, worker, [IrcServer, IrcPort])
             ]} }.
 
 

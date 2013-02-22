@@ -1,19 +1,20 @@
 %%% channel_plugin handles joining channels
 -module(channel_plugin).
--export([start_link/1]).
+-export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(state, {join_channels=[], in_channels=[]}).
 -include("bot.hrl").
 
 %% gen_server specfic
-start_link(Channels) -> 
-    gen_server:start_link(?MODULE, Channels, []).
+start_link() -> 
+    gen_server:start_link(?MODULE, [], []).
 
-init(Channels) ->
+init([]) ->
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     io:format("[~s] started.~n", [?MODULE]),
     irc_router:add_sub(self()),
+    Channels = settings:get(?MODULE, channels),
     BinChans = lists:map(fun(X) -> list_to_binary(X) end, Channels),
     {ok, #state{join_channels=BinChans}}.
 

@@ -32,10 +32,10 @@ load_plugins() ->
 get_plugins() ->
      [
       {nick_plugin_id,
-       {nick_plugin, start_link, ["erlbot"]},
+       {nick_plugin, start_link, []},
        permanent, 1000, worker, [nick_plugin]},
       {channel_plugin_id,
-          {channel_plugin, start_link, [["#erlang", "#rad", "#rad_releasetools", "#releng"]]},
+          {channel_plugin, start_link, []},
        permanent, 1000, worker, [channel_plugin]},
       {ping_plugin_id,
        {ping_plugin, start_link, []},
