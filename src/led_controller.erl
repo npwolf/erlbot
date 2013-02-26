@@ -1,7 +1,7 @@
 %%% led_controller is a module to toggle LEDs wired to gpio pins on the raspberry pi
 -module(led_controller).
 -behavior(gen_server).
--export([start_link/0]).
+-export([start_link/1]).
 % standard gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 % Public Interface
@@ -14,15 +14,16 @@
 -define(BLINK_DELAY, 250).
 
 %% gen_server specfic
-start_link() -> 
-    gen_server:start_link({local, led_svc}, ?MODULE, [], []).
+%% Pass in proplist of {Color, GPIO_Pin} Example: {red, 17}
+start_link(Color2Pin) -> 
+    gen_server:start_link({local, led_svc}, ?MODULE, Color2Pin, []).
 
-init([]) ->
+init(Color2Pin) ->
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     io:format("[~s] started.~n", [?MODULE]),
-    LedPins = [{green, 22}, {red, 17}],
-    {ok, #state{led_pins=LedPins}}.
+    %Color2Pin = [{green, 22}, {red, 17}],
+    {ok, #state{led_pins=Color2Pin}}.
 
 %% Public Interface
 

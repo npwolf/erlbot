@@ -21,3 +21,27 @@
 %    {channels, ["#erlang", "#bots2"]}
 %]}.
 
+%% channel_led_plugin
+%{channel_led_plugin_deploy_in_progress, [
+%        % 1 hour
+%        %{timeout, 3600000},
+%        % GPIO Pins 22 and 17 on raspberry pi
+%        {init_action, "led_controller:start_link([{green, 22}, {red, 17}])."},
+%        {timeout, 15000},
+%        {on_regex, "^Started deploy for (\\S+)$"},
+%        {on_action, "fun() -> led_controller:on(green) end."},
+%        {off_action, "fun() -> led_controller:off(green) end."},
+%        {off_regex, "^Completed deploy for (\\S+)$"}
+%]}.
+%
+%{channel_led_plugin_deployment_error, [
+%        % 1 hour
+%        %{timeout, 3600000},
+%        % GPIO Pins 22 and 17 on raspberry pi
+%        {init_action, "led_controller:start_link([{green, 22}, {red, 17}])."},
+%        {timeout, 15000},
+%        {on_regex, "^Group (\\d) encountered errors\.$"},
+%        {on_action, "fun() -> led_controller:blink(red, 10), led_controller:on(red) end."},
+%        {off_action, "fun() -> led_controller:off(red) end."},
+%        {off_regex, "^Group (\\d) completed$"}
+%]}.

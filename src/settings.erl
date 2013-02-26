@@ -2,7 +2,7 @@
 %%% First we check ./user_conf/user.conf.erl for the setting
 %%% We fallback to ./default_conf/Conf.conf.erl which will have defaults
 -module(settings).
--export([get/2]).
+-export([get/2, execute/1]).
 
 %% Get Value of Key in specified configuration (Conf)
 %% Currently re-reads file on every call, but these 
@@ -60,4 +60,12 @@ get_default(Conf, Key) ->
 get_user(Conf, Key) ->
     UserConf = "../user_conf/user.conf.erl",
     get(UserConf, Conf, Key).    
+
+%% Take a simple string and evaluate the expression
+execute(String) ->
+    {ok, Tokens, _} = erl_scan:string(String),
+    {ok, [Form]} = erl_parse:parse_exprs(Tokens),
+    {value, Value, _} = erl_eval:expr(Form, []),
+    Value.
+
 

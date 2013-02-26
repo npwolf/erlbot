@@ -31,6 +31,12 @@ load_plugins() ->
     
 get_plugins() ->
      [
+      {channel_led_plugin_deployment_error,
+       {channel_led_plugin, start_link, [channel_led_plugin_deployment_error]},
+       permanent, 1000, worker, [channel_led_plugin]},
+      {channel_led_plugin_deploy_in_progress,
+       {channel_led_plugin, start_link, [channel_led_plugin_deploy_in_progress]},
+       permanent, 1000, worker, [channel_led_plugin]},
       {nick_plugin_id,
        {nick_plugin, start_link, []},
        permanent, 1000, worker, [nick_plugin]},
