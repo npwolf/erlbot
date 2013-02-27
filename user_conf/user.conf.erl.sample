@@ -23,25 +23,29 @@
 
 %% channel_led_plugin
 %{channel_led_plugin_deploy_in_progress, [
-%        % 1 hour
-%        %{timeout, 3600000},
 %        % GPIO Pins 22 and 17 on raspberry pi
-%        {init_action, "led_controller:start_link([{green, 22}, {red, 17}])."},
-%        {timeout, 15000},
+%        {init_action, "led_controller:start_link([{green, 17}, {red, 22}])."},
+%        % 1 hour
+%        {timeout, 3600000},
+%        %{timeout, 15000},
 %        {on_regex, "^Started deploy for (\\S+)$"},
-%        {on_action, "fun() -> led_controller:on(green) end."},
+%        {on_action, "fun() -> led_controller:on(green), led_controller:blink(green, 3) end."},
 %        {off_action, "fun() -> led_controller:off(green) end."},
 %        {off_regex, "^Completed deploy for (\\S+)$"}
 %]}.
 %
 %{channel_led_plugin_deployment_error, [
-%        % 1 hour
-%        %{timeout, 3600000},
 %        % GPIO Pins 22 and 17 on raspberry pi
-%        {init_action, "led_controller:start_link([{green, 22}, {red, 17}])."},
-%        {timeout, 15000},
+%        {init_action, "led_controller:start_link([{green, 17}, {red, 22}])."},
+%        % 1 hour
+%        {timeout, 3600000},
+%        %{timeout, 15000},
 %        {on_regex, "^Group (\\d) encountered errors\.$"},
-%        {on_action, "fun() -> led_controller:blink(red, 10), led_controller:on(red) end."},
+%        {on_action, "fun() -> led_controller:on(red), led_controller:blink(red, 20) end."},
 %        {off_action, "fun() -> led_controller:off(red) end."},
 %        {off_regex, "^Group (\\d) completed$"}
 %]}.
+
+
+
+
