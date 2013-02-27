@@ -8,8 +8,8 @@
 -export([on/1, off/1, blink/2]).
 % Don't call these directly
 -export([blink_cast/2]).
-% Two proplists, Color atoms to Pins, and Color atom to TRef
--record(state, {led_pins=[], blinking_led=[]}).
+% orddicts, Color atoms to Pins, Color atom to TRef, Color atom to state (on/off) not blink
+-record(state, {led_pins=[], blinking_led=[], led_state=[]}).
 % Time between on/off state changes
 -define(BLINK_DELAY, 250).
 
@@ -22,18 +22,23 @@ init(Color2Pin) ->
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     io:format("[~s] started.~n", [?MODULE]),
+    % Init state of LEDs to off
+    LedState = [ {X, off} || X <- orddict:fetch_keys(Color2Pin)],
     %Color2Pin = [{green, 22}, {red, 17}],
-    {ok, #state{led_pins=Color2Pin}}.
+    {ok, #state{led_pins=Color2Pin, led_state=LedState}}.
 
 %% Public Interface
 
 %% Turn Color LED ON
 on(Color) ->
-    gen_server:cast(led_svc, {on, Color}).
+    toggle(Color, on).
 
 %% Turn Color LED OFF 
 off(Color) ->
-    gen_server:cast(led_svc, {off, Color}).
+    toggle(Color, off).
+
+toggle(Color, LedState) ->
+    gen_server:cast(led_svc, {LedState, Color}).
 
 %% Blink Color LED Times 
 blink(Color, Times) ->
@@ -58,7 +63,7 @@ blink_cast(Color, StateChangesLeft) ->
     gen_server:cast(led_svc, {blink, Color, StateChangesLeft}).
 
 % 0 state changes means we're done
-blink(_Color, _Pin, StateChangesLeft) when StateChangesLeft =< 0 -> {ok, done};
+blink(_Color, _Pin, StateChangesLeft) when StateChangesLeft =< 0 -> done;
 blink(Color, Pin, StateChangesLeft) -> 
     io:format("[~s] Blink ~p ~p~n", [?MODULE, Color, StateChangesLeft]),
     % On even states on, odd Off
@@ -75,41 +80,38 @@ get_value_file(Pin) ->
 
 % Get the pin number for a color atom
 get_pin_for_color(Color, Color2Pin) ->
-    proplists:get_value(Color, Color2Pin).
-
-%% Replace a TRef in our propertylist, or just remove it
-%% if TRef is ""
-replace_blink_to_ref(Color, NewTRef, Blinking2TRef) ->
-    RemovedTRef = proplists:delete(Color, Blinking2TRef),
-    case NewTRef of
-        [] -> RemovedTRef;
-        _  -> [{Color, NewTRef}|RemovedTRef]
-    end.
+    orddict:fetch(Color, Color2Pin).
 
 % Remove TRef and cancel apply timer if it exists
 cancel_blink(Color, Blinking2TRef) ->
-    case proplists:get_value(Color, Blinking2TRef) of 
-        undefined -> ok;
-        TRef -> timer:cancel(TRef)
+    case orddict:find(Color, Blinking2TRef) of 
+        error -> ok;
+        {ok, TRef} -> timer:cancel(TRef)
     end,
-    replace_blink_to_ref(Color, "", Blinking2TRef).
+    orddict:erase(Color, Blinking2TRef).
 
 %% Event Loop
 
+handle_cast({blink, Color, 0}, S = #state{blinking_led=BlinkingLed2TRef, led_state=TrackLedState}) -> 
+    % No more blinks, clear our timer ref
+    NewBlinkingLed2TRef = cancel_blink(Color, BlinkingLed2TRef),
+    % Now that the blinking is done, restore to our previous steady state
+    PrevState = orddict:fetch(Color, TrackLedState),
+    toggle(Color, PrevState),
+    {noreply, S#state{blinking_led=NewBlinkingLed2TRef}};
 handle_cast({blink, Color, StateChangesLeft}, S = #state{led_pins=Color2Pin, blinking_led=BlinkingLed2TRef}) -> 
     Pin = get_pin_for_color(Color, Color2Pin),
-    case blink(Color, Pin, StateChangesLeft) of 
-        {ok, done} -> NewBlinkingLed2TRef = cancel_blink(Color, BlinkingLed2TRef);
-        {ok, TRef} -> NewBlinkingLed2TRef = replace_blink_to_ref(Color, TRef, BlinkingLed2TRef)
-    end,
+    {ok, TRef} = blink(Color, Pin, StateChangesLeft),
+    NewBlinkingLed2TRef = orddict:store(Color, TRef, BlinkingLed2TRef),
     {noreply, S#state{blinking_led=NewBlinkingLed2TRef}};
 %% LedState should be either on or off
-handle_cast({LedState, Color}, S = #state{led_pins=Color2Pin, blinking_led=BlinkingLed2TRef}) -> 
+handle_cast({LedState, Color}, S = #state{led_pins=Color2Pin, blinking_led=BlinkingLed2TRef, led_state=TrackLedState}) -> 
     Pin = get_pin_for_color(Color, Color2Pin),
     % Cancel blinking in case we were blinking
     NewBlinkingLed2TRef = cancel_blink(Color, BlinkingLed2TRef),
     toggle(Color, Pin, LedState),
-    {noreply, S#state{blinking_led=NewBlinkingLed2TRef}};
+    NewTrackLedState = orddict:store(Color, LedState, TrackLedState),
+    {noreply, S#state{blinking_led=NewBlinkingLed2TRef, led_state=NewTrackLedState}};
 handle_cast(_Msg, S) -> 
     {noreply, S}.
 
