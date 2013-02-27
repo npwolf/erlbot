@@ -19,13 +19,16 @@ start_link(Color2Pin) ->
     gen_server:start_link({local, led_svc}, ?MODULE, Color2Pin, []).
 
 init(Color2Pin) ->
+    %Color2Pin = [{red, 22}, {green, 17}],
     %% Know when parent shuts down
     process_flag(trap_exit, true),
     io:format("[~s] started.~n", [?MODULE]),
     % Init state of LEDs to off
-    LedState = [ {X, off} || X <- orddict:fetch_keys(Color2Pin)],
-    %Color2Pin = [{green, 22}, {red, 17}],
-    {ok, #state{led_pins=Color2Pin, led_state=LedState}}.
+    % Convert our proplist to orddict
+    Color2PinDict = orddict:from_list(Color2Pin),
+    % Init all LEDs to off
+    LedState = orddict:map(fun(_X, _Y) -> off end, Color2PinDict),
+    {ok, #state{led_pins=Color2PinDict, led_state=LedState}}.
 
 %% Public Interface
 
