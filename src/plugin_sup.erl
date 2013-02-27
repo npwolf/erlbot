@@ -4,7 +4,7 @@
 -behaviour(supervisor).
 
 -export([start_link/0, load_plugins/0]).
--export([init/1, get_plugins/0]).
+-export([init/1, get_plugins/0, restart_plugin/1]).
 
 start_link() ->
     Strategy = {one_for_one, 6, 60},
@@ -67,4 +67,7 @@ load_plugins([Plugin|PluginsToLoad]) ->
     end,
     load_plugins(PluginsToLoad).
 
-
+%% Stop and start a plugin by id
+restart_plugin(PluginId) ->
+    supervisor:terminate_child(?MODULE, PluginId),
+    supervisor:restart_child(?MODULE, PluginId).
