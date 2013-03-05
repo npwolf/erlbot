@@ -172,7 +172,7 @@ bot_cmd_chan(NickFrom, Channel, Cmd, Args) ->
 
 %% Prefix '<<"nelson!~nelson@localhost">>' Command '<<"PRIVMSG">>' Args '[<<"#erlang">>, <<"Channel messages look like this">>]'
 handle_cast({send_subs, {irc_router, msg_rec, 
-            #irc_msg{prefix=From, cmd = <<"PRIVMSG">>, args=[<<"#", Chan/binary >>, Line]}}}, 
+            #irc_msg{prefix=From, cmd = _Command, args=[<<"#", Chan/binary >>, Line]}}}, 
             S = #state{cmd_word=CmdWord}) ->
     Channel = <<"#", Chan/binary>>,
     [FromNick, _IdentHost] = split_nick(From), 
