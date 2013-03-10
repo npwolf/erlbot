@@ -33,7 +33,7 @@ handle_cast({irc_router, connected}, S = #state{pref_nick=Nick}) ->
     io:format("[~s] Changing nick to ~s~n", [?MODULE, Nick]),
     set_nickname(Nick),
     % This only needs to be done once, or else you get 462 already registered
-    irc_send:raw(<< "USER ", Nick/binary, " hostname servername :", Nick/binary >>),
+    irc_send:raw_unbuf(<< "USER ", Nick/binary, " hostname servername :", Nick/binary >>),
     {noreply, S#state{current_nick=Nick, nick_number=1}};
 handle_cast({irc_router, disconnected}, S) ->
     {noreply, S#state{current_nick = <<>>}};
@@ -58,6 +58,6 @@ terminate(Reason, _S) ->
     ok.
 
 set_nickname(Nick) ->
-    irc_send:raw(<< "NICK ", Nick/binary >>),
+    irc_send:raw_unbuf(<< "NICK ", Nick/binary >>),
     ok.
 

@@ -32,6 +32,7 @@ init([]) ->
     % This start order is important
     {ok, { {one_for_one, 5, 10}, [
        ?CHILD(irc_router, worker, CmdWord),
+       ?CHILD(irc_send, worker),
        ?CHILD_SUP(plugin_sup),
        ?CHILD(bot_conn, worker, [IrcServer, IrcPort])
             ]} }.

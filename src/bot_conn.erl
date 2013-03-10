@@ -49,12 +49,13 @@ handle_cast({new_sock, Sock}, S) ->
     io:format("[~w] New Sock~n", [Sock]),
     {noreply, S#state{sock=Sock}};
 handle_cast({raw_send, Msg}, S = #state{sock=Sock}) ->
-    io:format("[~w] Raw send: ~p~n", [Sock, Msg]),
+    io:format("[~w] send: ~p~n", [Sock, Msg]),
     gen_tcp:send(Sock, Msg),
     {noreply, S};
 handle_cast(Msg, S = #state{sock=Sock}) ->
     io:format("[~w] Unknown cast: ~p~n", [Sock, Msg]),
     {noreply, S}.
+
 handle_info({tcp, Sock, Data}, S = #state{sock=Sock}) ->
     %%io:format("[~w] Sock Received: ~s", [Sock, Data]),
     irc_router:recv_raw(Data),

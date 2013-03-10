@@ -19,7 +19,7 @@ init([]) ->
 handle_cast({irc_router, msg_rec, #irc_msg{cmd = <<"PING">>, args = [Args]}}, S) ->
     io:format("[~s] Matched PING Args ~p~n", [?MODULE, Args]),
     Reply = << "PONG ", Args/binary >>,
-    irc_send:raw(Reply),
+    irc_send:raw_unbuf(Reply),
     {noreply, S};
 handle_cast(_Msg, S = #state{}) -> 
     {noreply, S}.
