@@ -8,7 +8,7 @@
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([track/2, forget/3, trigger/1]).
--record(state, {on_regex, off_regex, track_nick_keyword=[], on_fun, off_fun, timeout}).
+-record(state, {on_regex, on_regex_str, off_regex, off_regex_str, track_nick_keyword=[], on_fun, off_fun, timeout}).
 
 %% gen_server specfic
 start_link(Name) -> 
@@ -22,8 +22,8 @@ init([Name]) ->
     InitAction = settings:get(Name, init_action),
     % led_controller:start_link([{green, 22}, {red, 17}]),
     settings:execute(InitAction),
-    ONRegexStr = settings:get(Name, on_regex),
-    OFFRegexStr = settings:get(Name, off_regex),
+    ONRegexStr = list_to_binary(settings:get(Name, on_regex)),
+    OFFRegexStr = list_to_binary(settings:get(Name, off_regex)),
     OnActionStr = settings:get(Name, on_action),
     % Should be a fun
     OnAction = settings:execute(OnActionStr),
@@ -36,7 +36,7 @@ init([Name]) ->
     %OnAction = fun() -> led_controller:on(green) end,
     %OffAction = fun() -> led_controller:off(green) end,
     %Timeout = 3600000,
-    {ok, #state{on_regex=ONRegex, off_regex=OFFRegex, timeout=Timeout, on_fun=OnAction, off_fun=OffAction}}.
+    {ok, #state{on_regex=ONRegex, on_regex_str=ONRegexStr, off_regex=OFFRegex, off_regex_str=OFFRegexStr, timeout=Timeout, on_fun=OnAction, off_fun=OffAction}}.
 
 %% When the start action occurs, track the nick and keyword
 track(Nick, Keyword) ->
@@ -98,10 +98,10 @@ word_match_regex(Line, CRegex) ->
 
 check_match(State, Nick, Line, CRegex) ->
     Word = word_match_regex(Line, CRegex),  
-    io:format("[~s] State ~p Word ~p~n", [?MODULE, State, Word]),
     case Word of 
         nomatch -> ok;
         _ ->
+            io:format("[~s] Match! State ~p Word ~p~n", [?MODULE, State, Word]),
             case State of
                 on -> track(Nick, Word);
                 off -> 
@@ -113,6 +113,15 @@ check_match(State, Nick, Line, CRegex) ->
 handle_cast({irc_router, chan_msg, {Nick, _Channel, Line}}, S = #state{on_regex=OnRegex, off_regex=OffRegex}) ->
     check_match(on, Nick, Line, OnRegex),
     check_match(off, Nick, Line, OffRegex),
+    {noreply, S};
+handle_cast({irc_router, {cmd, _FromWhere}, {Nick, <<"tracking">>, _Args}}, 
+            S = #state{on_regex_str=OnRegex, off_regex_str=OffRegex, track_nick_keyword=NickKeywordList}) ->
+    Delimiter = <<"===================================">>,
+    OnRegexStr = irc_utils:bin_format("On Regex: ~p", [OnRegex]), 
+    OffRegexStr = irc_utils:bin_format("Off Regex: ~p", [OffRegex]), 
+    TrackingStr = iolist_to_binary(io_lib:format("Currently Tracking: ~p", [proplists:get_keys(NickKeywordList)])),
+    SendArray = [Delimiter, OnRegexStr, OffRegexStr, TrackingStr, Delimiter],
+    irc_send:priv(Nick, SendArray),
     {noreply, S};
 handle_cast({track, Nick, Keyword}, S = #state{track_nick_keyword=NickKeywordList, timeout=Timeout}) ->
     NewList = track(Nick, Keyword, NickKeywordList, Timeout),

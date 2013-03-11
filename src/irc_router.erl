@@ -3,10 +3,10 @@
 -module(irc_router).
 -behavior(gen_server).
 %% Public 
--export([start_link/1, timestamp/0, timestamp/1, format_irc_line/2, add_sub/1, remove_sub/1]).
+-export([add_sub/1, remove_sub/1]).
 %% Don't call these unless you really know what you're doing
 -export([recv_raw/1, connected/0, disconnected/0]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -record(state, {subscribers=[], cmd_word}).
 -include("bot.hrl").
 
@@ -35,20 +35,6 @@ add_sub(Pid) ->
 remove_sub(Pid) -> 
     gen_server:call(bot_router, {remove_sub, Pid}),
     ok.
-
-%% Return formatted timestamp.  Utility probably should be moved
-timestamp() -> timestamp(now()).
-timestamp(Now) -> 
-        {_, _, _Micros} = Now, 
-        {{YY, MM, DD}, {Hour, Min, Sec}} = calendar:now_to_local_time(Now), 
-        TS = io_lib:format("~4..0w-~2..0w-~2..0w ~2..0w:~2..0w:~2..0w ", 
-          [YY, MM, DD, Hour, Min, Sec]),
-        list_to_binary(TS).
-
-%% Return formatted irc line for display. Utility probably should be moved
-format_irc_line(Nick, Line) ->
-    TS = timestamp(),
-    <<TS/binary, "<", Nick/binary, "> ", Line/binary>>.
 
 
 % Private functions start
@@ -153,14 +139,14 @@ channel_message(NickFrom, Channel, Line) ->
 
 %% Called when message received through private message
 bot_cmd_priv(NickFrom, Cmd, Args) ->
-    Msg = {irc_router, cmd_priv, {NickFrom, Cmd, Args}},
+    Msg = {irc_router, {cmd, private}, {NickFrom, Cmd, Args}},
     send_subs_msg(Msg),
     ok.
 
 %% Called when someone starts their channel message out with bot_cmd
 %% Example: <nick> erlbot help 
 bot_cmd_chan(NickFrom, Channel, Cmd, Args) ->
-    Msg = {irc_router, cmd_chan, {NickFrom, Channel, Cmd, Args}},
+    Msg = {irc_router, {cmd, Channel},  {NickFrom, Cmd, Args}},
     send_subs_msg(Msg),
     ok.
 
@@ -183,6 +169,14 @@ handle_cast({send_subs, {irc_router, msg_rec,
         [_]          -> 
             channel_message(FromNick, Channel, Line)
     end,
+    {noreply, S};
+handle_cast({send_subs, {irc_router, msg_rec,
+            #irc_msg{prefix=From, cmd = <<"PRIVMSG">>, args=[_MyNick, Line]}}},
+            S = #state{cmd_word=CmdWord}) ->
+    [FromNick, _IdentHost] = split_nick(From),
+    % All private messages are command, no command word needed
+    [Cmd, Args] = get_cmd_args(Line),
+    bot_cmd_priv(FromNick, Cmd, Args),
     {noreply, S};
 handle_cast({send_subs, {irc_router, msg_rec, Msg = #irc_msg{cmd = <<"376">>}}}, S = #state{subscribers=SubPids}) ->
     io:format("[~s] End MOTD~n", [?MODULE]),

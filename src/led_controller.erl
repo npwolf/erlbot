@@ -5,7 +5,7 @@
 % standard gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 % Public Interface
--export([on/1, off/1, blink/2]).
+-export([on/1, off/1, blink/2, get_state/0]).
 % Don't call these directly
 -export([blink_cast/2]).
 % orddicts, Color atoms to Pins, Color atom to TRef, Color atom to state (on/off) not blink
@@ -40,6 +40,10 @@ on(Color) ->
 off(Color) ->
     toggle(Color, off).
 
+get_state() ->
+    States = gen_server:call(led_svc, {get_state}),
+    States.
+    
 toggle(Color, LedState) ->
     gen_server:cast(led_svc, {LedState, Color}).
 
@@ -122,6 +126,8 @@ handle_info(Msg, S) ->
     io:format("[~s] Unknown info ~p~n", [?MODULE, Msg]),
     {noreply, S}.
 
+handle_call({get_state}, _From, S = #state{led_state=TrackLedState}) ->
+    {reply, TrackLedState, S};
 handle_call(terminate, _From, S) ->
     {stop, normal, ok, S};
 handle_call(Msg, From, S = #state{}) ->
